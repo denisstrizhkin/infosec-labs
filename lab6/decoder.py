@@ -1,4 +1,4 @@
-import sys
+from typing import Self
 import base64
 from pathlib import Path
 
@@ -6,29 +6,56 @@ import typer
 from PIL import Image
 
 
-def get_stdin_b64() -> bytes:
-    s = sys.stdin.read()
-    return base64.b64encode(s.encode("utf8"))
+class BitIterator:
+    def __init__(self, img: Image.Image):
+        self._img = img
+        self._rgb_i = 0
+        self._pixel_i = 0
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> int:
+        if self._pixel_i >= self._img.width * self._img.height:
+            raise StopIteration
+
+        xy = (
+            self._pixel_i % self._img.width,
+            self._pixel_i // self._img.width,
+        )
+        rgb = list(self._img.getpixel(xy))
+        bit = rgb[self._rgb_i] & 0b00000001
+
+        self._rgb_i += 1
+        if self._rgb_i >= 3:
+            self._rgb_i = 0
+            self._pixel_i += 1
+
+        return bit
 
 
-def decode_rgb(r: int, g: int, b: int) -> int:
-    r = (r & 0b00000111) << 5
-    g = (g & 0b00000111) << 2
-    b = b & 0b00000011
-    return r | g | b
+class ByteIterator:
+    def __init__(self, img: Image.Image):
+        self._bit_iter = BitIterator(img)
+        self._bit_i = 0
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> bytes:
+        byte = 0
+        for i in range(8):
+            byte = (byte << 1) | next(self._bit_iter)
+        return byte.to_bytes(1)
 
 
 def decode_img(img: Image.Image) -> str:
     data = b""
-    img_size = img.width * img.height
-    for i in range(img_size):
-        x = i % img.width
-        y = i // img.width
-        (r, g, b) = img.getpixel((x, y))
-        c = decode_rgb(r, g, b)
-        if c == 0:
+    for byte in ByteIterator(img):
+        if byte == b"\0":
             return base64.b64decode(data).decode("utf8")
-        data += c.to_bytes()
+        data += byte
+
     raise ValueError("Image does not contain encoded data")
 
 

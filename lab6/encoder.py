@@ -1,3 +1,5 @@
+from typing import Self
+
 import sys
 import base64
 from pathlib import Path
@@ -11,35 +13,46 @@ def get_stdin_b64() -> bytes:
     return base64.b64encode(s.encode("utf8"))
 
 
-def encode_red(color: int, data: int) -> int:
-    data = (data & 0b11100000) >> 5
-    return (color & 0b11111000) | data
+class BitIterator:
+    def __init__(self, data: bytes):
+        self._data = data
+        self._byte_i = 0
+        self._bit_i = 0
 
+    def __iter__(self) -> Self:
+        return self
 
-def encode_green(color: int, data: int) -> int:
-    data = (data & 0b00011100) >> 2
-    return (color & 0b11111000) | data
+    def __next__(self) -> int:
+        if self._byte_i >= len(self._data):
+            raise StopIteration
 
+        byte = self._data[self._byte_i]
+        bit = (byte >> (7 - self._bit_i)) & 1
 
-def encode_blue(color: int, data: int) -> int:
-    data = data & 0b00000011
-    return (color & 0b11111100) | data
+        self._bit_i += 1
+        if self._bit_i >= 8:
+            self._bit_i = 0
+            self._byte_i += 1
+
+        return bit
 
 
 def encode_img(img: Image.Image, data: bytes):
     data = data + b"\0"
+    print(data)
     img_size = img.width * img.height
-    if img_size < len(data):
+    if img_size * 3 // 8 < len(data):
         raise ValueError("Not enough pixels to encode all of the data.")
 
-    for i, c in enumerate(data):
-        x = i % img.width
-        y = i // img.width
-        (r, g, b) = img.getpixel((x, y))
-        r = encode_red(r, c)
-        g = encode_green(g, c)
-        b = encode_blue(b, c)
-        img.putpixel((x, y), (r, g, b))
+    for i, bit in enumerate(BitIterator(data)):
+        pi = i // 3
+        rgbi = i % 3
+        xy = (pi % img.width, pi // img.width)
+        rgb = list(img.getpixel(xy))
+        rgb[rgbi] = (rgb[rgbi] & 0b11111110) | bit
+        img.putpixel(xy, tuple(rgb))
+        print(bit, end="")
+    print()
 
 
 def main(img_path: Path):
