@@ -8,9 +8,8 @@ import typer
 from PIL import Image
 
 
-def get_stdin_b64() -> bytes:
-    s = sys.stdin.read()
-    return base64.b64encode(s.encode("utf8"))
+def get_stdin() -> str:
+    return sys.stdin.read()
 
 
 class BitIterator:
@@ -37,9 +36,8 @@ class BitIterator:
         return bit
 
 
-def encode_img(img: Image.Image, data: bytes):
-    data = data + b"\0"
-    print(data)
+def encode_img(img: Image.Image, s: str):
+    data = base64.b64encode(s.encode("utf8")) + b"\0"
     img_size = img.width * img.height
     if img_size * 3 // 8 < len(data):
         raise ValueError("Not enough pixels to encode all of the data.")
@@ -51,14 +49,12 @@ def encode_img(img: Image.Image, data: bytes):
         rgb = list(img.getpixel(xy))
         rgb[rgbi] = (rgb[rgbi] & 0b11111110) | bit
         img.putpixel(xy, tuple(rgb))
-        print(bit, end="")
-    print()
 
 
 def main(img_path: Path):
     img = Image.open(img_path).convert("RGB")
 
-    data = get_stdin_b64()
+    data = get_stdin()
     encode_img(img, data)
 
     new_name = img_path.stem + "_encoded.png"

@@ -53,7 +53,12 @@ def decode_img(img: Image.Image) -> str:
     data = b""
     for byte in ByteIterator(img):
         if byte == b"\0":
-            return base64.b64decode(data).decode("utf8")
+            try:
+                return base64.b64decode(data).decode("utf8")
+            except Exception as e:
+                raise ValueError(
+                    f"Encoded data is incorrect or corrupted: {e}"
+                )
         data += byte
 
     raise ValueError("Image does not contain encoded data")
