@@ -9,5 +9,5 @@ uv sync
 Launch a `.py` file with uv
 
 ```console
-uv run /path/to/file.py
+cat lab1/input | uv run -m lab7.encoder lab7/audio.wav
 ```
