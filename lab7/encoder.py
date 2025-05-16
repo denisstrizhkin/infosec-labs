@@ -38,7 +38,7 @@ class BitIterator:
 
 def encode_audio(audio: AudioData, s: str):
     data = base64.b64encode(s.encode("utf8")) + b"\0"
-    audio_size = audio.framerate * audio.nframes * audio.nchannels
+    audio_size = audio.nframes * audio.nchannels
     if audio_size // 8 < len(data):
         raise ValueError("Not enough bytes to encode all of the data.")
 
