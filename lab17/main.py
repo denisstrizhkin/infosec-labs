@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 import sqlite3
 import os
 
@@ -57,6 +58,6 @@ def get_user(user_id: str):
 
     if user_data:
         user_dict = {"id": user_data[0], "username": user_data[1]}
-        return user_dict
+        return JSONResponse(content=user_dict)
     else:
         raise HTTPException(status_code=404)
