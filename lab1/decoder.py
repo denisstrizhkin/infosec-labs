@@ -98,12 +98,12 @@ def get_key_length(text, min_sequence_length=3) -> int:
         if len(positions) > 1
     }
 
-    distances: list[int] = []
+    distances: list[int] = list()
     for positions in sequences.values():
         for i in range(1, len(positions)):
             distances.append(positions[i] - positions[i - 1])
 
-    gcd_counts: dict[int] = defaultdict(int)
+    gcd_counts: dict[int, int] = defaultdict(int)
     for i in range(len(distances)):
         for j in range(i + 1, len(distances)):
             current_gcd = gcd(distances[i], distances[j])
@@ -114,7 +114,7 @@ def get_key_length(text, min_sequence_length=3) -> int:
 
 
 def split_into_groups(text: str, key_length: int) -> list[list[str]]:
-    groups = [[] for _ in range(key_length)]
+    groups: list[list[str]] = [list() for _ in range(key_length)]
     for i, char in enumerate(text):
         groups[i % key_length].append(char)
     return groups
@@ -130,11 +130,11 @@ def mse_score(frequences: dict[str, float]) -> float:
     return mse
 
 
-def frequency_attack(group: list[list[str]]) -> int:
+def frequency_attack(group: list[str]) -> int:
     best_shift = 0
     best_error = float("inf")
     for shift in range(RU_SIZE):
-        decrypted = []
+        decrypted: list[str] = list()
         for c in group:
             decrypted.append(RU_LITERALS[(RU_TABLE[c] - shift) % RU_SIZE])
         counter = Counter(decrypted)
@@ -149,7 +149,7 @@ def frequency_attack(group: list[list[str]]) -> int:
 
 def find_vigenere_key(text: str, key_length: int) -> str:
     groups = split_into_groups(text, key_length)
-    key: list[str] = []
+    key: list[str] = list()
     for group in groups:
         shift = frequency_attack(group)
         key_char = RU_LITERALS[shift]
@@ -158,7 +158,7 @@ def find_vigenere_key(text: str, key_length: int) -> str:
 
 
 def decrypt_vigenere(text: str, key: str) -> str:
-    decrypted = []
+    decrypted = list()
     key_length = len(key)
     i = 0
     for c in text:
